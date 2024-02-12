@@ -62,9 +62,14 @@ pub fn handle_key_event(app: &mut App) -> Result<bool> {
                         if let Some(mpv) = &mut app.mpv {
                             let _ = mpv.kill();
                         }
+                        let url = format!(
+                            "{}{}",
+                            app.base_url,
+                            &app.selected_song.clone().unwrap().url
+                        );
                         app.mpv = Some(
                             std::process::Command::new("mpv")
-                                .arg(&app.selected_song.clone().unwrap().url)
+                                .arg(url)
                                 .arg("--no-video")
                                 .arg("--force-window=no")
                                 .arg("--start=0")

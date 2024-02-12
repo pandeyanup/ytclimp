@@ -2,7 +2,7 @@ use reqwest::{
     header::{HeaderValue, ACCEPT_LANGUAGE, USER_AGENT},
     Client,
 };
-use std::{error::Error, ops::Not, process::Command, thread};
+use std::{error::Error, ops::Not};
 
 use crate::response::{
     Album, AlbumResponse, AlbumSongResponse, Artist, ArtistResponse, OrangeResult, Song,
@@ -11,22 +11,8 @@ use crate::response::{
 
 const USR_AGENT: &str =
     "Mozilla/5.0 (X11; U; Linux armv7l; en-US; rv:1.9.2a1pre) Gecko/20090322 Fennec/1.0b2pre";
-const YT_URL: &str = "https://www.youtube.com";
 const SEARCH_URL: &str = "https://pipedapi.kavin.rocks/search";
 const ALBUM_URL: &str = "https://pipedapi.kavin.rocks/playlists/";
-
-#[allow(dead_code)]
-pub fn play_selection(selection: &str) {
-    let selection = selection.to_owned();
-    thread::spawn(move || {
-        Command::new("mpv")
-            .arg(&selection.trim())
-            .stdout(std::process::Stdio::null())
-            .stderr(std::process::Stdio::null())
-            .spawn()
-            .expect("Failed to execute command. Ensure mpv is installed.");
-    });
-}
 
 #[tokio::main]
 pub async fn get_song(search: &str) -> Result<Vec<OrangeResult>, Box<dyn Error>> {
@@ -98,7 +84,7 @@ pub async fn get_song(search: &str) -> Result<Vec<OrangeResult>, Box<dyn Error>>
     for video in videos {
         let title = video.title.as_ref().unwrap().to_string().replace("//", "");
         let watch_id = video.url.to_string();
-        let video_url = format!("{}{}", YT_URL, watch_id);
+        let video_url = watch_id;
         let vid_duration = duration(video.duration.unwrap());
         let uploader = video.uploader_name.unwrap().to_string().replace("//", "");
         let is_verified = video.uploader_verified.unwrap();
@@ -235,7 +221,7 @@ pub async fn get_album_tracks(album_id: &str) -> Result<Vec<OrangeResult>, Box<d
     for video in videos {
         let title = video.title.as_ref().unwrap().to_string().replace("//", "");
         let watch_id = video.url.to_string();
-        let video_url = format!("{}{}", YT_URL, watch_id);
+        let video_url = watch_id;
         let vid_duration = duration(video.duration.unwrap());
         let uploader = video.uploader_name.unwrap().to_string().replace("//", "");
         let is_verified = video.uploader_verified.unwrap();

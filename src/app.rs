@@ -27,10 +27,11 @@ pub struct App {
     pub looping: bool,
     pub track_block_title: String,
     pub from_album_block: bool,
+    pub base_url: String,
 }
 
 impl App {
-    pub fn new(search: &str) -> Self {
+    pub fn new(search: &str, piped: bool) -> Self {
         Self {
             active_block: 1,
             search_query: String::new(),
@@ -42,6 +43,11 @@ impl App {
                 search
             })
             .unwrap(),
+            base_url: if piped {
+                "https://piped.video".to_string()
+            } else {
+                "https://www.youtube.com".to_string()
+            },
             selected_artist: None,
             artist_state: ListState::default(),
             song_data: get_song(if search.is_empty() {

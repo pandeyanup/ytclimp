@@ -21,8 +21,17 @@ fn main() -> io::Result<()> {
                 .required(false)
                 .num_args(0),
         )
+        .arg(
+            Arg::new("piped")
+                .short('p')
+                .long("piped")
+                .help_heading("Use piped instance for playing")
+                .required(false)
+                .num_args(0),
+        )
         .get_matches();
     let search_mode = matches.get_one::<bool>("search").unwrap();
+    let piped_mode = matches.get_one::<bool>("piped").unwrap();
 
     let mut search_data = String::new();
     if *search_mode {
@@ -32,7 +41,7 @@ fn main() -> io::Result<()> {
             .unwrap();
     }
 
-    let app = App::new(&search_data.to_owned());
+    let app = App::new(&search_data.to_owned(), piped_mode.to_owned());
     ui::run_ui(app)?;
     Ok(())
 }
