@@ -93,29 +93,34 @@ pub fn run_ui(mut app: App) -> io::Result<()> {
 
             // track_block
             let track_block = blocks[3].to_owned().title(app.track_block_title.clone());
-            let song_list = List::new(app.song_data.iter().map(|song| {
-                ListItem::new(format!("{} by {}", song.title, song.uploader))
-                    .style(Style::default().fg(Color::Rgb(198, 160, 246)))
-            }))
-            .block(track_block)
-            .highlight_style(Style::default().bg(Color::White).fg(Color::Black));
+                let song_list = List::new(app.song_data.iter().enumerate().map(|(index, song)| {
+                    ListItem::new(format!("{}. {} by 『{}』", index+1, song.title, if app.from_album_block {
+                        app.selected_album.clone().unwrap().uploader_name
+                    } else {
+                    song.uploader.clone()
+                    }))
+                        .style(Style::default().fg(Color::Rgb(198, 160, 246)))
+                }))
+                .block(track_block)
+                .highlight_style(Style::default().bg(Color::White).fg(Color::Black));
+
             frame.render_stateful_widget(song_list, middle_chunks[1], &mut app.song_state);
 
             // status_block
             let status_block = blocks[3].to_owned().title("Status");
             let playing_styled = if let Some(selected_song) = &app.selected_song {
                 Span::styled(
-                    format!("Playing: {}", selected_song.title.clone()),
+                    format!("Playing: {} by 『{}』", selected_song.title.clone(), selected_song.uploader.clone()),
                     Style::default().fg(Color::Rgb(203, 166, 247)),
                 )
             } else {
                 Span::styled(
-                    format!("'q' - quit | 'p' - pause/play | 'l' - loop playing | '+' or '-' - change volume | 'esc' - stop playing"),
+                    format!("'q' - quit | 'space' - pause/play | 'l' - loop playing | '+' or '-' - change volume | 'esc' - stop playing"),
                     Style::default().fg(Color::Rgb(180, 190, 254)),
                 )
             };
             let statusbar = Span::styled(
-                format!("vol: {} | loop: {}", app.volume, app.looping.to_string()),
+                format!("Vol: {} | Loop: {} ", app.volume, app.looping.to_string()),
                 Style::default().fg(Color::Green),
             )
             .to_right_aligned_line();

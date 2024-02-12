@@ -30,7 +30,7 @@ pub fn album_block<'a>(active_block: usize) -> Block<'a> {
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded)
         .style(if active_block == 2 {
-            Style::default().fg(Color::Rgb(116, 199, 236))
+            Style::default().fg(Color::Rgb(243, 139, 168))
         } else {
             Style::default()
         })
@@ -41,7 +41,7 @@ pub fn track_block<'a>(active_block: usize) -> Block<'a> {
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded)
         .style(if active_block == 3 {
-            Style::default().fg(Color::Rgb(245, 224, 220))
+            Style::default().fg(Color::Rgb(243, 139, 168))
         } else {
             Style::default()
         })

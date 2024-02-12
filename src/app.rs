@@ -26,22 +26,38 @@ pub struct App {
     pub volume: i32,
     pub looping: bool,
     pub track_block_title: String,
+    pub from_album_block: bool,
 }
 
 impl App {
-    pub fn new() -> Self {
+    pub fn new(search: &str) -> Self {
         Self {
             active_block: 1,
             search_query: String::new(),
             search_input: String::new(),
             is_search_mode: false,
-            artist_data: get_artist("Aimer milet").unwrap(),
+            artist_data: get_artist(if search.is_empty() {
+                "Aimer, milet"
+            } else {
+                search
+            })
+            .unwrap(),
             selected_artist: None,
             artist_state: ListState::default(),
-            song_data: get_song("RADWIMPS milet").unwrap(),
+            song_data: get_song(if search.is_empty() {
+                "RADWIMPS milet"
+            } else {
+                search
+            })
+            .unwrap(),
             selected_song: None,
             song_state: ListState::default(),
-            album_data: get_album("Aimer RADWIMPS").unwrap(),
+            album_data: get_album(if search.is_empty() {
+                "Aimer blanc"
+            } else {
+                search
+            })
+            .unwrap(),
             selected_album: None,
             album_state: ListState::default(),
             search_cursor_position: 0,
@@ -51,11 +67,12 @@ impl App {
             volume: 100,
             looping: false,
             track_block_title: "Tracks".to_string(),
+            from_album_block: false,
         }
     }
 
     pub fn next(&mut self) {
         // no go to status tab. Why go there?
-        self.active_block = (self.active_block + 1) % 4;
+        self.active_block = ((self.active_block) % 3) + 1;
     }
 }

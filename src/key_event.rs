@@ -1,6 +1,6 @@
 use crate::{
     app::App,
-    fetch::{get_album, get_artist, get_song},
+    fetch::{get_album, get_album_tracks, get_artist, get_song},
 };
 use crossterm::event::{self, Event, KeyCode};
 use std::io::{Result, Write};
@@ -24,6 +24,7 @@ pub fn handle_key_event(app: &mut App) -> Result<bool> {
                     app.album_state.select(Some(0));
                     app.artist_state.select(Some(0));
                     app.song_state.select(Some(0));
+                    app.from_album_block = false;
                 }
                 1 => {
                     if let Some(selected) = app.artist_state.selected() {
@@ -31,17 +32,22 @@ pub fn handle_key_event(app: &mut App) -> Result<bool> {
                         app.active_block = 3;
                     }
                     app.song_data = get_song(&app.selected_artist.clone().unwrap().name).unwrap();
-                    app.artist_data =
-                        get_artist(&app.selected_artist.clone().unwrap().name).unwrap();
+                    app.album_data =
+                        get_album(&app.selected_artist.as_ref().unwrap().name).unwrap();
                     app.track_block_title = app.selected_artist.clone().unwrap().name;
+                    app.song_state.select(Some(0));
+                    app.from_album_block = false;
                 }
                 2 => {
                     if let Some(selected) = app.album_state.selected() {
                         app.selected_album = Some(app.album_data[selected].clone());
                         app.active_block = 3;
                     }
-                    app.song_data = get_song(&app.selected_album.clone().unwrap().name).unwrap();
+                    app.song_data =
+                        get_album_tracks(&app.selected_album.as_ref().unwrap().url).unwrap();
                     app.track_block_title = app.selected_album.clone().unwrap().name;
+                    app.song_state.select(Some(0));
+                    app.from_album_block = true;
                 }
                 3 => {
                     if let Some(selected) = app.song_state.selected() {
@@ -61,7 +67,7 @@ pub fn handle_key_event(app: &mut App) -> Result<bool> {
                                 .arg(&app.selected_song.clone().unwrap().url)
                                 .arg("--no-video")
                                 .arg("--force-window=no")
-                                .arg("{ 'command': [ 'seek', '0', 'absolute' ] }")
+                                .arg("--start=0")
                                 .arg("--input-ipc-server=/tmp/mpvsocket")
                                 .stdout(std::process::Stdio::null())
                                 .stderr(std::process::Stdio::null())
@@ -163,6 +169,26 @@ pub fn handle_key_event(app: &mut App) -> Result<bool> {
                         let mut stream = UnixStream::connect("/tmp/mpvsocket").unwrap();
                         write!(stream, "{{\"command\":[\"cycle\", \"pause\"]}}\n").unwrap();
                         app.is_playing = true;
+                    }
+                }
+            }
+            KeyCode::Char('l') => {
+                if app.is_playing {
+                    let mut stream = UnixStream::connect("/tmp/mpvsocket").unwrap();
+                    if app.looping {
+                        write!(
+                            stream,
+                            "{{\"command\":[\"set_property\", \"loop-file\", \"no\"]}}\n"
+                        )
+                        .unwrap();
+                        app.looping = false;
+                    } else {
+                        write!(
+                            stream,
+                            "{{\"command\":[\"set_property\", \"loop-file\", \"inf\"]}}\n"
+                        )
+                        .unwrap();
+                        app.looping = true;
                     }
                 }
             }

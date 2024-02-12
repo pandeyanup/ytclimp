@@ -5,13 +5,15 @@ use reqwest::{
 use std::{error::Error, ops::Not, process::Command, thread};
 
 use crate::response::{
-    Album, AlbumResponse, Artist, ArtistResponse, OrangeResult, Song, SongResponse,
+    Album, AlbumResponse, AlbumSongResponse, Artist, ArtistResponse, OrangeResult, Song,
+    SongResponse,
 };
 
 const USR_AGENT: &str =
     "Mozilla/5.0 (X11; U; Linux armv7l; en-US; rv:1.9.2a1pre) Gecko/20090322 Fennec/1.0b2pre";
 const YT_URL: &str = "https://www.youtube.com";
 const SEARCH_URL: &str = "https://pipedapi.kavin.rocks/search";
+const ALBUM_URL: &str = "https://pipedapi.kavin.rocks/playlists/";
 
 #[allow(dead_code)]
 pub fn play_selection(selection: &str) {
@@ -141,11 +143,11 @@ pub async fn get_album(search: &str) -> Result<Vec<Album>, Box<dyn Error>> {
     for album in results {
         let album_name = album.name.replace("//", "");
         let uploader = album.uploader_name.replace("//", "");
-        let album_url = album.url;
+        let album_url = album.url.split("/playlist?list=").collect::<Vec<&str>>()[1];
         album_results.push(Album {
-            name: album_name + " by " + uploader.as_str(),
+            name: album_name + " by " + "『" + uploader.as_str() + "』",
             uploader_name: uploader,
-            url: album_url,
+            url: album_url.to_string(),
         });
     }
 
@@ -175,6 +177,75 @@ pub async fn get_artist(search: &str) -> Result<Vec<Artist>, Box<dyn Error>> {
 
     if results.is_empty() {
         return Ok(Vec::new());
+    }
+
+    Ok(results)
+}
+
+#[tokio::main]
+pub async fn get_album_tracks(album_id: &str) -> Result<Vec<OrangeResult>, Box<dyn Error>> {
+    if album_id.is_empty() {
+        return Ok(Vec::new());
+    }
+    let client = Client::new();
+
+    let album_url = format!("{}{}", ALBUM_URL, album_id);
+
+    let resp = client
+        .get(album_url)
+        .header(USER_AGENT, HeaderValue::from_str(USR_AGENT).unwrap())
+        .header(ACCEPT_LANGUAGE, HeaderValue::from_static("en-US,en;q=0.9"))
+        .send()
+        .await?;
+
+    let body = resp.text().await?;
+    let response_data: AlbumSongResponse = serde_json::from_str(&body)?;
+
+    let mut results: Vec<OrangeResult> = vec![];
+
+    if response_data.related_streams.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let mut videos: Vec<Song> = vec![];
+
+    // push the videos to the videos vector if the title is "stream"
+    for video in response_data.related_streams {
+        if video.video_type.to_lowercase() == "stream" && video.is_short.is_none().not() {
+            videos.push(video);
+        }
+    }
+
+    if videos.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let duration = |d: i32| -> String {
+        let minutes = d / 60;
+        let seconds = d % 60;
+        if seconds < 10 && minutes > 10 {
+            return format!("{}:0{}", minutes, seconds);
+        }
+        if seconds > 10 && minutes < 10 {
+            return format!("0{}:{}", minutes, seconds);
+        }
+        format!("{}:{}", minutes, seconds)
+    };
+
+    for video in videos {
+        let title = video.title.as_ref().unwrap().to_string().replace("//", "");
+        let watch_id = video.url.to_string();
+        let video_url = format!("{}{}", YT_URL, watch_id);
+        let vid_duration = duration(video.duration.unwrap());
+        let uploader = video.uploader_name.unwrap().to_string().replace("//", "");
+        let is_verified = video.uploader_verified.unwrap();
+        results.push(OrangeResult {
+            title,
+            url: video_url,
+            duration: vid_duration,
+            uploader,
+            is_verified,
+        });
     }
 
     Ok(results)

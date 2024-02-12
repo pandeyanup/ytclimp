@@ -74,3 +74,10 @@ pub struct OrangeResult {
     pub uploader: String,
     pub is_verified: bool,
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct AlbumSongResponse {
+    pub name: String,
+    #[serde(rename = "relatedStreams")]
+    pub related_streams: Vec<Song>,
+}
